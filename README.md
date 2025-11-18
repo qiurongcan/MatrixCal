@@ -15,23 +15,51 @@
 - matrix_scale
 - matrix_multiply
 - matrix_is_symmetric
+- matrix_det
+- matrix_sub
+  
+## Makefile
 
-# CMakeLists
-样例CMake文件：
+样例Makefile文件：
+
 ~~~cmake
-cmake_minimum_required(VERSION 3.20)
-project(MyMatrixSolver)
+# 编译器设置
+CC = gcc
+CFLAGS = -Wall -Wextra -std=c99 -O3 -lm
+INCLUDES = -I.
 
-file(GLOB_RECURSE TARGET_SRC  "src/*.cpp")
-file(GLOB_RECURSE TARGET_INC  "include/*.hpp")
-set(TARGET_SRC ${TARGET_SRC}  ${TARGET_INC})
+# 目标可执行文件名
+TARGET = myprogram
 
-set(TARGET "matrix_solver")
-set(TARGET_SRC src/main.cpp)
+# 源文件
+SRCS = Main.c
 
-add_executable(${TARGET} ${TARGET_SRC})
+# 对象文件
+OBJS = $(SRCS:.c=.o)
+
+# 头文件依赖
+HEADERS = Matrix.hpp MatrixType.hpp
+
+# 默认目标
+all: $(TARGET)
+
+# 链接生成可执行文件
+$(TARGET): $(OBJS)
+    $(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
+
+# 编译主文件
+main.o: main.c $(HEADERS)
+    $(CC) $(CFLAGS) $(INCLUDES) -c main.c
+
+# 编译头文件1的源文件
+Matrix.o: Matrix.hpp MatrixType.hpp
+    $(CC) $(CFLAGS) $(INCLUDES) -c Matrix.hpp
+
+# 编译头文件2的源文件
+MatrixType.o: Matrix.hpp MatrixType.hpp
+    $(CC) $(CFLAGS) $(INCLUDES) -c MatrixType.hpp
 ~~~
 
-# TODO
-- matrix_det
+## TODO
+
 - matrix_inv

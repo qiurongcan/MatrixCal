@@ -5,23 +5,42 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include <stdbool.h>
+#include <time.h>
 
-enum MatrixProperty
+typedef enum
 {
     General,
     Hermitian,
     Triangular
-};
+} MatrixProperty;
 
-enum MatrixSolver
+typedef enum
 {
     LU,
     LDL,
     TRIANGULAR
-};
+} MatrixSolver;
 
 typedef int    IndexType;
 typedef double ValueType;
+
+typedef struct {
+    clock_t start_time;
+    clock_t end_time;
+} Timer;
+
+void start_timer(Timer *t) {
+    t->start_time = clock();
+}
+
+void stop_timer(Timer *t) {
+    t->end_time = clock();
+}
+
+double get_elapsed_time(Timer *t) {
+    return ((double)(t->end_time - t->start_time)) / CLOCKS_PER_SEC;
+}
 
 typedef struct
 {
@@ -51,8 +70,10 @@ Matrix* matrix_addmatrix(Matrix* matrix_a, Matrix* matrix_b);
 void    matrix_scale(Matrix* matrix, ValueType scalar);
 Matrix* matrix_multiply(Matrix* matrix_a, Matrix* matrix_b);
 
-// Matrix* matrix_inverse(const Matrix* matrix);
-// ValueType  matrix_determinant(const Matrix* matrix);
+// 计算逆矩阵和矩阵行列式
+// Matrix* matrix_inv(const Matrix* matrix);
+ValueType  matrix_det(Matrix* matrix);
+Matrix*    matrix_sub(Matrix* matrix, IndexType i, IndexType j);
 
 // 矩阵特性
 bool matrix_is_symmetric(const Matrix* matrix, double tolerance);

@@ -1,9 +1,9 @@
 #ifndef _MATRIX_HPP_
 #define _MATRIX_HPP_
 
-#include "MatrixType.hpp"
+#include "MatrixType.h"
 
-Matrix* matrix_create(IndexType row, IndexType col, MatrixProperty MP = MatrixProperty::General)
+Matrix* matrix_create(IndexType row, IndexType col, MatrixProperty MP)
 {
     if (row <= 0 || col <= 0) {
         fprintf(stderr, "Error: Matrix dimensions must be positive\n");
@@ -113,10 +113,10 @@ void matrix_print(const Matrix* matrix)
         return;
     }
     printf("Matrix %dx%d:\n", matrix->matrix_rows, matrix->matrix_cols);
-    if (matrix->MP == MatrixProperty::General)
+    if (matrix->MP == General)
     {
         printf("Matrix Property: General\n");
-    }else if (matrix->MP == MatrixProperty::Hermitian) 
+    }else if (matrix->MP == Hermitian) 
     {
         printf("Matrix Property: Hermitian\n");
     }else
@@ -137,7 +137,7 @@ Matrix* matrix_transpose(Matrix* matrix)
 {
     if (!matrix) return NULL;
 
-    Matrix* result = matrix_create(matrix->matrix_cols, matrix->matrix_rows);
+    Matrix* result = matrix_create(matrix->matrix_cols, matrix->matrix_rows, General);
     if (!result) return NULL;
 
     for (IndexType row = 0; row < matrix->matrix_rows; row ++)
@@ -171,7 +171,7 @@ Matrix* matrix_addmatrix(Matrix* matrix_a, Matrix* matrix_b)
         return NULL;
     }
     
-    Matrix* result = matrix_create(matrix_a->matrix_rows, matrix_b->matrix_cols);
+    Matrix* result = matrix_create(matrix_a->matrix_rows, matrix_b->matrix_cols, General);
     if (!result) return NULL;
     
     for (int i = 0; i < matrix_a->matrix_rows; i++) {
@@ -200,7 +200,7 @@ Matrix* matrix_multiply(Matrix* matrix_a, Matrix* matrix_b)
         return NULL;
     }
 
-    Matrix* result = matrix_create(matrix_a->matrix_rows, matrix_b->matrix_cols);
+    Matrix* result = matrix_create(matrix_a->matrix_rows, matrix_b->matrix_cols, General);
     if (!result) return NULL;
 
     for (IndexType i = 0; i < matrix_a->matrix_rows; i++)
@@ -239,6 +239,104 @@ bool matrix_is_symmetric(const Matrix* matrix, double tolerance) {
         }
     }
     return true;
+}
+
+Matrix*    matrix_sub(Matrix* matrix, IndexType i, IndexType j)
+{
+    Matrix* sub_matrix = matrix_create(matrix->matrix_rows - 1, matrix->matrix_cols - 1, General);
+    if (!sub_matrix) return NULL;
+
+    for (IndexType index_i = 0; index_i < matrix->matrix_rows; index_i++)
+    {
+        for (IndexType index_j = 0; index_j < matrix->matrix_cols; index_j++)
+        {
+            if (index_i != i && index_j != j)
+            {
+                IndexType sub_i = (index_i < i) ? index_i : index_i - 1;
+                IndexType sub_j = (index_j < j) ? index_j : index_j - 1;
+
+                sub_matrix->matrix_data[sub_i][sub_j] = matrix->matrix_data[index_i][index_j];               
+            }
+        }
+    }
+    return sub_matrix;
+}
+
+ValueType  matrix_det(Matrix* matrix)
+{
+    if (matrix->matrix_cols != matrix->matrix_rows)
+    {
+        fprintf(stderr,"Error: Not Square Matrix");
+        return 0;
+    }
+
+    int N = matrix->matrix_cols;
+    // 使用一维数组存储以提高缓存效率
+    double *flat = (double*)malloc(N * N * sizeof(double));
+    int *pivot = (int*)malloc(N * sizeof(int));
+    
+    // 展平矩阵
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            flat[i * N + j] = matrix->matrix_data[i][j];
+        }
+        pivot[i] = i;
+    }
+    
+    int sign = 1;
+    
+    for (int k = 0; k < N; k++) {
+        // 部分选主元
+        int max_row = k;
+        double max_val = fabs(flat[k * N + k]);
+        
+        for (int i = k + 1; i < N; i++) {
+            double abs_val = fabs(flat[i * N + k]);
+            if (abs_val > max_val) {
+                max_val = abs_val;
+                max_row = i;
+            }
+        }
+        
+        if (max_row != k) {
+            // 交换行（使用memcpy提高效率）
+            double temp_row[N];
+            memcpy(temp_row, &flat[k * N], N * sizeof(double));
+            memcpy(&flat[k * N], &flat[max_row * N], N * sizeof(double));
+            memcpy(&flat[max_row * N], temp_row, N * sizeof(double));
+            
+            int temp_idx = pivot[k];
+            pivot[k] = pivot[max_row];
+            pivot[max_row] = temp_idx;
+            sign = -sign;
+        }
+        
+        double pivot_val = flat[k * N + k];
+        if (fabs(pivot_val) < 1e-15) {
+            free(flat);
+            free(pivot);
+            return 0.0;
+        }
+        
+        // 向量化友好的更新
+        for (int i = k + 1; i < N; i++) {
+            double factor = flat[i * N + k] / pivot_val;
+            flat[i * N + k] = factor;
+            
+            for (int j = k + 1; j < N; j++) {
+                flat[i * N + j] -= factor * flat[k * N + j];
+            }
+        }
+    }
+    
+    double det = sign;
+    for (int i = 0; i < N; i++) {
+        det *= flat[i * N + i];
+    }
+    
+    free(flat);
+    free(pivot);
+    return det;
 }
 
 #endif 
